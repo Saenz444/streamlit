@@ -26,46 +26,31 @@ from sklearn.linear_model import LinearRegression
 import os
 
  
-#UTILIZAMOS PICKLE PARA LLEVARLO A OTRO SCRIPT
-with open('m_rf.pkl','rb') as rf:
-    m_rf = pickle.load(rf)
-
-with open('m_svm.pkl','rb') as svm:
-    m_svm = pickle.load(svm)
-    
-with open('m_KNN.pkl','rb') as knn:
-    m_KNN = pickle.load(knn)
-    
-with open('m_RL.pkl', 'rb') as rl:
-    m_RL = pickle.load(rl)
 
 #LA DATA DEL MODELO
-    Data = pd.read_excel("Data.xlsx", engine="openpyxl")
+Data = pd.read_excel("Data.xlsx")
 
 
 # Preprocesamiento de los datos para la distribucion
-    estudiantes_CEPRE = Data.drop(['estudiante','si_no'], axis=1)
-    Columnas = estudiantes_CEPRE.columns.to_list()
-    nColumnas = ['P-1','P-2','P-3','P-4','P-5','P-6','P-7']
-    dfColumnas = dict(zip(Columnas, nColumnas))
-    estudiantes_CEPRE.rename(columns=dfColumnas, inplace=True)
+estudiantes_CEPRE = Data.drop(['estudiante','si_no'], axis=1)
+Columnas = estudiantes_CEPRE.columns.to_list()
+nColumnas = ['P-1','P-2','P-3','P-4','P-5','P-6','P-7']
+dfColumnas = dict(zip(Columnas, nColumnas))
+estudiantes_CEPRE.rename(columns=dfColumnas, inplace=True)
    
    # Ajuste del modelo y optimización de hiperparámetros 
-    X_train, X_test, y_train, y_test = train_test_split(
-    estudiantes_CEPRE.drop(columns = 'ingreso'),
-    estudiantes_CEPRE['ingreso'],
-    random_state = 123
-    )
+X_train, X_test, y_train, y_test = train_test_split(
+estudiantes_CEPRE.drop(columns = 'ingreso'),estudiantes_CEPRE['ingreso'],random_state = 123)
     
 # Grid Search basado en validación cruzada
 # =================================================================================================
-    param_grid = {'n_estimators': [150], #la data que utiliza
+param_grid = {'n_estimators': [150], #la data que utiliza
                     'max_features': [3, 5, 7], #las preguntas
                     'max_depth'   : [None, 3, 10, 20],
                     'criterion'   : ['gini', 'entropy']
                 }
 # Búsqueda por grid search con validación cruzada
-    grid = GridSearchCV(
+grid = GridSearchCV(
         estimator  = RandomForestClassifier(random_state = 123),
         param_grid = param_grid,
         scoring    = 'accuracy',
@@ -77,20 +62,20 @@ with open('m_RL.pkl', 'rb') as rl:
 )
     
 # with tf.device('/device:GPU:0'):
-    grid.fit(X = X_train, y = y_train)
+grid.fit(X = X_train, y = y_train)
 
 #Calcular la accuracy
-    modelo_final = grid.best_estimator_
-    predicciones = modelo_final.predict(X = X_test) 
+modelo_final = grid.best_estimator_
+predicciones = modelo_final.predict(X = X_test) 
     
 #Medir el rendimmiento del modelo
-    mat_confusion = confusion_matrix(
+mat_confusion = confusion_matrix(
         y_true    = y_test,
         y_pred    = predicciones
     )
     
 #Calcular la precision
-    accuracy = accuracy_score(
+accuracy = accuracy_score(
         y_true    = y_test,
         y_pred    = predicciones,
         normalize = True
@@ -98,52 +83,52 @@ with open('m_RL.pkl', 'rb') as rl:
 
 ###################################################################################################################
 #ENTRENO DE SVM
-    X_train_svm, X_test_svm, y_train_svm, y_test_svm = train_test_split(
-    estudiantes_CEPRE.drop(columns = 'ingreso'),
-    estudiantes_CEPRE['ingreso'],
-     random_state = 5    # 4 rondas
+X_train_svm, X_test_svm, y_train_svm, y_test_svm = train_test_split(
+estudiantes_CEPRE.drop(columns = 'ingreso'),
+estudiantes_CEPRE['ingreso'],
+random_state = 5    # 4 rondas
     )
 
-    estudiantes_CEPRE.drop(columns = 'ingreso')  
+estudiantes_CEPRE.drop(columns = 'ingreso')  
 
-    modelo_svm = SVC(kernel='rbf', C=1)      # rbf, linear, poly, sigmoid
-    modelo_svm.fit(X_train_svm, y_train_svm)
+modelo_svm = SVC(kernel='rbf', C=1)      # rbf, linear, poly, sigmoid
+modelo_svm.fit(X_train_svm, y_train_svm)
     
-    accuracy_rf = modelo_svm.score(X_test_svm, y_test_svm)
-    y_pred = modelo_svm.predict(X_test_svm)
+accuracy_rf = modelo_svm.score(X_test_svm, y_test_svm)
+y_pred = modelo_svm.predict(X_test_svm)
 
 ######################################################################################################################
 #ENTRENO DE KNN
-    modelo_KNN = KNeighborsClassifier(n_neighbors=3)
-    modelo_KNN.fit(X_train_svm, y_train_svm)
-    m= modelo_KNN.fit(X_train_svm, y_train_svm)
+modelo_KNN = KNeighborsClassifier(n_neighbors=3)
+modelo_KNN.fit(X_train_svm, y_train_svm)
+m= modelo_KNN.fit(X_train_svm, y_train_svm)
     
-    acurracy_k = m.score(X_train_svm, y_train_svm)
-    predict_KNN = m.predict(X_test_svm)
+acurracy_k = m.score(X_train_svm, y_train_svm)
+predict_KNN = m.predict(X_test_svm)
     
 
 #######################################################################################################################
 #ENTRENO RL - SCIKIT-LEARN
-    matriz_unos = np.array(np.ones((X_train_svm.shape[0], 1)))
-    matriz_X = np.append(matriz_unos, X_train_svm.values, axis=1)
+matriz_unos = np.array(np.ones((X_train_svm.shape[0], 1)))
+matriz_X = np.append(matriz_unos, X_train_svm.values, axis=1)
     
-    matriz_X_Transpuesta = matriz_X.transpose()
-    matriz_X_inversa = np.linalg.inv(np.matmul(matriz_X_Transpuesta, matriz_X))
+matriz_X_Transpuesta = matriz_X.transpose()
+matriz_X_inversa = np.linalg.inv(np.matmul(matriz_X_Transpuesta, matriz_X))
 
-    matriz_X_TranspuestaY = np.matmul(matriz_X_Transpuesta, y_train_svm)
+matriz_X_TranspuestaY = np.matmul(matriz_X_Transpuesta, y_train_svm)
     
-    matriz_Beta = np.matmul(matriz_X_inversa, matriz_X_TranspuestaY)
+matriz_Beta = np.matmul(matriz_X_inversa, matriz_X_TranspuestaY)
 # Prueba inicial
 #                          P1, P2, P3, P4, P5, P6, P7
-    datos_Prueba = np.array([[1, 1,  5,  5,  5,  1,  1, 5], [1, 4,3,4,5,2,3,5]])
-    media_Ingresa = np.dot(datos_Prueba, matriz_Beta)
+datos_Prueba = np.array([[1, 1,  5,  5,  5,  1,  1, 5], [1, 4,3,4,5,2,3,5]])
+media_Ingresa = np.dot(datos_Prueba, matriz_Beta)
 
     
 # Utilizando la librería Scikit-Learn
-    modelo_RL = LinearRegression()
-    modelo_RL.fit(X_train_svm, y_train_svm)
-    coeficientes_RL = modelo_RL.coef_
-    interceptor_RL = modelo_RL.intercept_
+modelo_RL = LinearRegression()
+modelo_RL.fit(X_train_svm, y_train_svm)
+coeficientes_RL = modelo_RL.coef_
+interceptor_RL = modelo_RL.intercept_
 
 # Coeficiente de determinarion R2
 # Coeficiente RL mas hacia 1, el modelo es adecuado de lo contrario no es el adecuado
