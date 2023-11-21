@@ -40,7 +40,7 @@ with open('m_RL.pkl', 'rb') as rl:
     m_RL = pickle.load(rl)
 
 #LA DATA DEL MODELO
-    Data = pd.read_excel("Data.xlsx")
+    Data = pd.read_excel("Data.xlsx", engine="openpyxl")
 
 
 # Preprocesamiento de los datos para la distribucion
