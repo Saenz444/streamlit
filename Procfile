@@ -1,0 +1,1 @@
+web: sh setup.sh && streamlit run random_forest_tesis_web.py
