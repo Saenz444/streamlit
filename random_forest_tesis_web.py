@@ -1,4 +1,6 @@
 import streamlit as st
+
+from analysis import generate_plots
 from sklearn import metrics
 import pickle
 import pandas as pd
@@ -25,7 +27,21 @@ from sklearn.linear_model import LinearRegression
 
 import os
 
- 
+    # Función para generar un gráfico de líneas
+def line_chart():
+    x = np.linspace(0, 10, 100)
+    y = np.sin(x)
+    fig, ax = plt.subplots()
+    ax.plot(x, y)
+    st.pyplot(fig)
+
+# Función para generar un gráfico de dispersión
+def scatter_chart():
+    x = np.random.rand(100)
+    y = np.random.rand(100)
+    fig, ax = plt.subplots()
+    ax.scatter(x, y)
+    st.pyplot(fig)
 
 #LA DATA DEL MODELO
 Data = pd.read_excel("Data.xlsx")
@@ -37,7 +53,65 @@ Columnas = estudiantes_CEPRE.columns.to_list()
 nColumnas = ['P-1','P-2','P-3','P-4','P-5','P-6','P-7']
 dfColumnas = dict(zip(Columnas, nColumnas))
 estudiantes_CEPRE.rename(columns=dfColumnas, inplace=True)
-   
+
+######################################################################################################
+#ANALYSIS
+c_ingreso = Data['ingreso'].value_counts()
+print(c_ingreso)
+
+
+# In[3]:
+
+
+# Preprocesamiento de los datos para la distribucion
+estudiantes_CEPRE = Data.drop(['estudiante','si_no'], axis=1)
+Columnas = estudiantes_CEPRE.columns.to_list()
+nColumnas = ['P-1','P-2','P-3','P-4','P-5','P-6','P-7']
+dfColumnas = dict(zip(Columnas, nColumnas))
+estudiantes_CEPRE.rename(columns=dfColumnas, inplace=True)
+
+
+# In[4]:
+
+
+Data_tesis = estudiantes_CEPRE[['P-3','P-2','P-7','P-4','P-1','P-6','P-5']]
+#Data_tesis
+
+
+# In[5]:
+graph_Data = estudiantes_CEPRE[['P-1','P-2','P-3','P-4','P-5','P-6','P-7']].transpose()
+
+# metric: russellrao, rogerstanimoto, sokalmichener, chebyshev, kulsinski, ..., cityblock, minkowski, euclidean, hamming, jaccard, matching, sqeuclidean, yule
+metric = ['russellrao', 'rogerstanimoto', 'sokalmichener', 'chebyshev', 'kulsinski', 'cityblock', 'minkowski', 'euclidean', 'hamming', 'jaccard', 'matching', 'sqeuclidean', 'yule']
+Grafico = sns.clustermap(graph_Data, metric=metric[3], cmap='vlag_r', figsize=(16, 3), 
+               row_cluster=False, dendrogram_ratio=(.1, .2),  cbar_pos=(0, .2, .03, .4))
+
+def Calcular_Promedio(Dt):
+    p3,p2,p7,p4,p1,p6,p5 = Dt
+
+    return (p3+p2+p7+p4+p1)-(p6+p5)
+
+def extract_clustered_table(Graphic, gData):
+    if Graphic.dendrogram_row is None:
+        print("Aparentemete, Las columnas no estan agrupadas")
+        return -1
+    if Graphic.dendrogram_col is not None:
+        new_cols = gData.columns[Graphic.dendrogram_col.reordered_ind]
+        new_ind = gData.index[Graphic.dendrogram_row.reordered_ind]
+        return gData.loc[new_ind, new_cols]
+    else:
+        new_ind = gData.index[Graphic.dendrogram_row.reordered_ind]
+        return gData.loc[new_ind,:]
+
+
+Data_tesis = estudiantes_CEPRE[['P-3', 'P-2', 'P-7', 'P-4', 'P-1', 'P-6', 'P-5']]
+
+Data_tesis['PROM'] = Data_tesis[['P-3', 'P-2', 'P-7', 'P-4', 'P-1', 'P-6', 'P-5']].apply(Calcular_Promedio, axis=1)
+
+
+
+
+###########################################################################################################   
    # Ajuste del modelo y optimización de hiperparámetros 
 X_train, X_test, y_train, y_test = train_test_split(
 estudiantes_CEPRE.drop(columns = 'ingreso'),estudiantes_CEPRE['ingreso'],random_state = 123)
@@ -137,6 +211,7 @@ print('Coeficiente de determinacion RL:', modelo_RL.score(X_test_svm, y_test_svm
 
 prediccion_RL = modelo_RL.predict(X_test_svm)
 print('RMSE:', (np.sqrt(mean_squared_error(y_test_svm, prediccion_RL))))
+#########################################################################
 
     
  ###########################################################################################   
@@ -186,16 +261,24 @@ def mostrar_grafico_importancia_preguntas(modelo, X_train, y_train):
     # Mostrar la figura en Streamlit
     st.pyplot(fig)
 ######################################################################################
+
+
+######################################################################################################################
 #STREAMLIT - WEB
 def main():
+
 #TITULO GENERAL DE LA PAGINA
     st.title('SATISFACCIÓN ACADÉMICA')   
-    st.markdown("Utilizaremos modelos como Random Forest, SVM, KNN y Rgresion Lineal.")
+    st.markdown("Utilizaremos algoritmos y medición de grado satisfacción")
+
     
-    
-    st.image("machine.png", caption="Descripción de la imagen", use_column_width=True)
-    
-    
+# Imagen inicial
+    if 'show_image' not in st.session_state:
+        st.session_state.show_image = True
+
+    if  st.session_state.show_image:
+        st.image("machine.png", caption=" ", use_column_width=True)
+
 #BARRA IZQUIERDA TITULO GENERAL
     st.sidebar.header('PARÁMETROS DE ENTRADA') 
     
@@ -204,30 +287,35 @@ def main():
     st.sidebar.subheader("Mostrar la DATA completa")
     if st.sidebar.checkbox('Data'):
         st.write(Data)
- 
+  
+    st.sidebar.subheader("Mostrar la DATA completa")
+    if st.sidebar.checkbox('Satisfacción - Likert'):
+        st.write(Data_tesis)
     
     #ESCOGER CLASIFICACION DE MIS MODELOS
     st.sidebar.subheader("Escoger Clasificación")
-    option = ['Ninguno','Random Forest','Support Vector Machine (SVM)', 'KNN', 'Regresion Lineal']
-    classifier = st.sidebar.selectbox("Escoger el Modelo",option)
+    option1 = ['Ninguno','Random Forest','Support Vector Machine (SVM)', 'KNN', 'Regresion Lineal']
+    classifier = st.sidebar.selectbox("Escoger el Modelo",option1, key="unique_key_1")
     
-    
+###############################################################################################################
+    if classifier == 'Ninguno':
+        st.session_state.show_image = True
+    else:
+        st.session_state.show_image = False
    
 ###############################################################################################################
-    if classifier is None:
-        st.image("machine.png", caption="Descripción de la imagen", use_column_width=True)
-    else:
-        if classifier != 'Ninguno':
+    
    
 #SI ELIJO RANDOMFOREST   
-            if classifier == 'Random Forest':
-                st.header("Modelo Random Forest")
-                st.write("Accuracy: {:.2f}%".format(100 * accuracy))
+
+        if classifier == 'Random Forest':
+            st.header("Modelo Random Forest")
+            st.write("Accuracy: {:.2f}%".format(100 * accuracy))
         
         
     # Matriz de confusión y gráfico para Random Forest
-                st.subheader("Matriz de Confusión")
-                conf_matrix_rf = confusion_matrix(y_test, grid.predict(X_test))
+            st.subheader("Matriz de Confusión")
+            conf_matrix_rf = confusion_matrix(y_test, grid.predict(X_test))
         #st.write("Matriz de Confusión:", conf_matrix_rf )
     
 
@@ -236,108 +324,205 @@ def main():
        # disp_rf = ConfusionMatrixDisplay(confusion_matrix=conf_matrix_rf, display_labels=np.unique(y_test))
 
     # Configuración del gráfico
-                fig, ax = plt.subplots(figsize=(8, 6))
-                sns.heatmap(conf_matrix_rf, annot=True, fmt="d", cmap="YlGnBu", cbar=False, ax=ax)
+            fig, ax = plt.subplots(figsize=(8, 6))
+            sns.heatmap(conf_matrix_rf, annot=True, fmt="d", cmap="YlGnBu", cbar=False, ax=ax)
 
     # Ajustes adicionales (puedes personalizar según tus preferencias)
-                plt.title("Matriz de Confusión - Random Forest")
-                plt.xlabel("Predicciones")
-                plt.ylabel("Valores reales")
+            plt.title("Matriz de Confusión - Random Forest")
+            plt.xlabel("Predicciones")
+            plt.ylabel("Valores reales")
 
     # Mostrar el gráfico en Streamlit
-                st.pyplot(fig)
-                plt.close(fig)
+            st.pyplot(fig)
+            plt.close(fig)
 
 #########################################################################################
-
-    #SI ES SVM
-    
-            elif classifier == 'Support Vector Machine (SVM)':
-                st.header("Modelo SVM")
-                st.write("Accuracy: {:.2f}%".format(100 * accuracy_rf))
-                cm_svm = confusion_matrix(y_test_svm, y_pred)
+        elif classifier == 'Support Vector Machine (SVM)':
+            st.header("Modelo SVM")
+            st.write("Accuracy: {:.2f}%".format(100 * accuracy_rf))
+            cm_svm = confusion_matrix(y_test_svm, y_pred)
         #st.write('Confusion matrix: ', cm_svm)
     
-    # Mostrar la matriz de confusión como un gráfico
-                st.subheader('Confusion Matrix')
+            st.subheader('Confusion Matrix')
      
     # Código para mostrar el gráfico de la matriz de confusión con seaborn
         #st.write("Gráfico de Matriz de Confusión:")
         #disp_svm = ConfusionMatrixDisplay(confusion_matrix=cm_svm, display_labels=np.unique(y_test_svm))
     
     # Configuración del gráfico
-                fig, ax = plt.subplots(figsize=(8, 6))
-                sns.heatmap(cm_svm, annot=True, fmt="d", cmap="YlGnBu", cbar=False, ax=ax)
+            fig, ax = plt.subplots(figsize=(8, 6))
+            sns.heatmap(cm_svm, annot=True, fmt="d", cmap="YlGnBu", cbar=False, ax=ax)
 
     # Ajustes adicionales (puedes personalizar según tus preferencias)
-                plt.title("Matriz de Confusión - SVM")
-                plt.xlabel("Predicciones")
-                plt.ylabel("Valores reales")
+            plt.title("Matriz de Confusión - SVM")
+            plt.xlabel("Predicciones")
+            plt.ylabel("Valores reales")
 
     # Mostrar el gráfico en Streamlit
-                st.pyplot(fig)
-                plt.close(fig)
+            st.pyplot(fig)
+            plt.close(fig)
 
-    
-    ###########################################################################################################
-            elif classifier == 'KNN':
-                st.header("Modelo KNN")
-                st.write("Accuracy: {:.2f}%".format(100 * acurracy_k))
-                matriz_confussion = confusion_matrix(y_test_svm, predict_KNN)
+        elif classifier == 'KNN':
+            st.header("Modelo KNN")
+            st.write("Accuracy: {:.2f}%".format(100 * acurracy_k))
+            matriz_confussion = confusion_matrix(y_test_svm, predict_KNN)
         #st.write('Confusion matrix: ', matriz_confussion)
     
     # Mostrar la matriz de confusión como un gráfico
-                st.subheader('Confusion Matrix')
+            st.subheader('Confusion Matrix')
      
     # Código para mostrar el gráfico de la matriz de confusión con seaborn
        # st.write("Gráfico de Matriz de Confusión:")
         #disp_knn = ConfusionMatrixDisplay(confusion_matrix=matriz_confussion, display_labels=np.unique(y_test_svm))
     
     # Configuración del gráfico
-                fig, ax = plt.subplots(figsize=(8, 6))
-                sns.heatmap(matriz_confussion, annot=True, fmt="d", cmap="YlGnBu", cbar=False, ax=ax)
+            fig, ax = plt.subplots(figsize=(8, 6))
+            sns.heatmap(matriz_confussion, annot=True, fmt="d", cmap="YlGnBu", cbar=False, ax=ax)
 
     # Ajustes adicionales (puedes personalizar según tus preferencias)
-                plt.title("Matriz de Confusión - KNN")
-                plt.xlabel("Predicciones")
-                plt.ylabel("Valores reales")
+            plt.title("Matriz de Confusión - KNN")
+            plt.xlabel("Predicciones")
+            plt.ylabel("Valores reales")
 
     # Mostrar el gráfico en Streamlit
-                st.pyplot(fig)
-                plt.close(fig)
+            st.pyplot(fig)
+            plt.close(fig)
     
     ##############################################################################################################
     # regresión lineal
     
-            elif classifier == 'Regresion Lineal':
-                st.header("Modelo Regresión Lineal")
-                st.write("Coeficiente de Determinación RL : {:.2f}%".format(100 * modelo_RL.score(X_test_svm, y_test_svm)))
-                st.write(f'RMSE: {np.sqrt(mean_squared_error(y_test_svm, prediccion_RL))}')
+        elif classifier == 'Regresion Lineal':
+            st.header("Modelo Regresión Lineal")
+            st.write("Coeficiente de Determinación RL : {:.2f}%".format(100 * modelo_RL.score(X_test_svm, y_test_svm)))
+            st.write(f'RMSE: {np.sqrt(mean_squared_error(y_test_svm, prediccion_RL))}')
 
         
     #GRAFICO  
     
-                plt.figure(figsize=(8, 6))
-                plt.scatter(y_test_svm, prediccion_RL)
-                plt.plot([min(y_test_svm), max(y_test_svm)], [min(y_test_svm), max(y_test_svm)], linestyle='--', color='red', linewidth=2)
-                plt.xlabel('Valores Reales')
-                plt.ylabel('Predicciones')
-                plt.title('Comparación entre Valores Reales y Predicciones (Regresión Lineal)')
-                st.pyplot(plt)
+            plt.figure(figsize=(8, 6))
+            plt.scatter(y_test_svm, prediccion_RL)
+            plt.plot([min(y_test_svm), max(y_test_svm)], [min(y_test_svm), max(y_test_svm)], linestyle='--', color='red', linewidth=2)
+            plt.xlabel('Valores Reales')
+            plt.ylabel('Predicciones')
+            plt.title('Comparación entre Valores Reales y Predicciones (Regresión Lineal)')
+            st.pyplot(plt)
                 
 
         
-            else:
-    # Si no se selecciona un gráfico
-                st.write("Selecciona un gráfico en el menú desplegable.")
+            # Volver a mostrar la imagen si no se ha seleccionado ningún modelo
+        if st.session_state.show_image:
+            st.image("machine.png", caption="Descripción de la imagen", use_column_width=True)
+###############################################################################################################
+    #MEDICION DE SATISFACCION
+    st.sidebar.subheader("Medición de Satisfacción Académica")
+    option2 = ['Ninguno','Metrica','Satisfaccion']
+    classifier1 = st.sidebar.selectbox("Escoger el Modelo",option2, key="unique_key_2")
+    
+
+    if classifier1 == 'Ninguno':
+        st.session_state.show_image = True
+    else:
+        st.session_state.show_image = False
+        
+#SI ELIJO RANDOMFOREST   
+        if classifier1 == 'Metrica':
+            st.header("Cluster")
+            t_Data = estudiantes_CEPRE[['P-1','P-2','P-3','P-4','P-5','P-6','P-7']].head(100).transpose()
+            t_Data = np.asarray(t_Data)
+
+            fig, ax = plt.subplots(figsize = (16, 4))
+            Graph = ax.imshow(t_Data, cmap='RdBu')
+            cbar = ax.figure.colorbar(Graph, ax = ax)
+            cbar.ax.set_ylabel("Escala de Likert", rotation = -90, va = "bottom")
+                #plt.show()
+            graph_Data = estudiantes_CEPRE[['P-1','P-2','P-3','P-4','P-5','P-6','P-7']].transpose()
+
+# metric: russellrao, rogerstanimoto, sokalmichener, chebyshev, kulsinski, ..., cityblock, minkowski, euclidean, hamming, jaccard, matching, sqeuclidean, yule
+            metric = ['russellrao', 'rogerstanimoto', 'sokalmichener', 'chebyshev', 'kulsinski', 'cityblock', 'minkowski', 'euclidean', 'hamming', 'jaccard', 'matching', 'sqeuclidean', 'yule']
+            Grafico = sns.clustermap(graph_Data, metric=metric[3], cmap='vlag_r', figsize=(16, 3), 
+                            row_cluster=False, dendrogram_ratio=(.1, .2),  cbar_pos=(0, .2, .03, .4))
+            st.pyplot(Grafico)
+                
+# t_Data              
+                
+        elif classifier1 == 'Satisfaccion':
+            st.header("Grado de Satisfacción")
+            graph_Data = estudiantes_CEPRE[['P-1', 'P-2', 'P-3', 'P-4', 'P-5', 'P-6', 'P-7']].transpose()
+
+# metric: russellrao, rogerstanimoto, sokalmichener, chebyshev, kulsinski, ..., cityblock, minkowski, euclidean, hamming, jaccard, matching, sqeuclidean, yule
+            metric = ['russellrao', 'rogerstanimoto', 'sokalmichener', 'chebyshev', 'kulsinski', 'cityblock', 'minkowski', 'euclidean', 'hamming', 'jaccard', 'matching', 'sqeuclidean', 'yule']
+            Grafico = sns.clustermap(graph_Data, metric=metric[3], cmap='vlag_r', figsize=(16, 3), row_cluster=False, dendrogram_ratio=(.1, .2), cbar_pos=(0, .2, .03, .4))
+
+            ok_Data_Cols = graph_Data.columns[Grafico.dendrogram_col.reordered_ind]
+            ok_Data = graph_Data[ok_Data_Cols]
+            ok_Data = ok_Data.transpose()
+            idx_List = ok_Data.index
+            ok_Data.reset_index(inplace=True, drop=True)
+            ok_Data = ok_Data.transpose()
+
+# Sumando las columnas de la Matriz
+            sum_Cols = ok_Data.apply(lambda x: sum(ok_Data[x]))
+            Max, Min = max(sum_Cols), min(sum_Cols)
+            print(Max, Min)
+
+# Calculamos los Quintiles
+            Qt_1 = [7.0,  12.6]     # Totalmente en desacuerdo
+            Qt_2 = [12.6, 18.2]     # En desacuerdo
+            Qt_3 = [18.2, 23.8]     # Ni de acuerdo ni en desacuerdo
+            Qt_4 = [23.8, 29.4]     # De acuerdo
+            Qt_5 = [29.4, 35.0]     # Totalmente de acuerdo
+
+            data_lk_1 = sum_Cols[(sum_Cols >= Qt_1[0]) & (sum_Cols < Qt_1[1])]
+            data_lk_2 = sum_Cols[(sum_Cols >= Qt_2[0]) & (sum_Cols < Qt_2[1])]
+            data_lk_3 = sum_Cols[(sum_Cols >= Qt_3[0]) & (sum_Cols < Qt_3[1])]
+            data_lk_4 = sum_Cols[(sum_Cols >= Qt_4[0]) & (sum_Cols < Qt_4[1])]
+            data_lk_5 = sum_Cols[(sum_Cols >= Qt_5[0]) & (sum_Cols <= Qt_5[1])]
+
+            cn1, cn2, cn3, cn4, cn5 = len(data_lk_1), len(data_lk_2), len(data_lk_3), len(data_lk_4), len(data_lk_5)
+
+            ls_1 = list(data_lk_1) + list([0]*(len(sum_Cols)-cn1))
+            ls_2 = list([0]*(cn1 + 1)) + list(data_lk_2) + list([0]*(len(sum_Cols)-(cn1 + cn2)))
+            ls_3 = list([0]*(cn1 + cn2 + 1)) + list(data_lk_3) + list([0]*(len(sum_Cols) - (cn1 + cn2 + cn3)))
+            ls_4 = list([0]*(cn1 + cn2 + cn3 + 1)) + list(data_lk_4) + list([0] * (len(sum_Cols) - (cn1 + cn2 + cn3 + cn4)))
+            ls_5 = list([0]*(cn1 + cn2 + cn3 + cn4 + 1)) + list(data_lk_5) + list([0]*1)
+
+            Columnas   = ['Muy insatisfecho', 'Poco satisfecho', 'Ni satisfecho ni en instisfecho', 'Satisfecho', 'Totalmente satisfecho']
+            Colors     = ['brown','red','orange','limegreen','darkgreen']
+            Percentage = ['{0:.2f}%'.format(cn1/len(sum_Cols)*100),
+                            '{0:.2f}%'.format(cn2/len(sum_Cols)*100),
+                            '{0:.2f}%'.format(cn3/len(sum_Cols)*100),
+                            '{0:.2f}%'.format(cn4/len(sum_Cols)*100),
+                            '{0:.2f}%'.format(cn5/len(sum_Cols)*100)]
+
+            fig, ax = plt.subplots(figsize = (16, 4))
+# sns.lineplot(data=[[data_lk_1, data_lk_2]], palette="tab10", linewidth=1.5).set_title("SEGMENTACION DE LA ESCALA DE LIKERT")
+# Likert_graph = sns.lineplot(data=[ls_1, ls_2, ls_3], palette="tab10", linewidth=1.5)
+            sns.lineplot(data=ls_1, color=Colors[0], linewidth=1.5, label=Columnas[0] + ' ' + Percentage[0])
+            sns.lineplot(data=ls_2, color=Colors[1], linewidth=1.5, label=Columnas[1] + ' ' + Percentage[1])
+            sns.lineplot(data=ls_3, color=Colors[2], linewidth=1.5, label=Columnas[2] + ' ' + Percentage[2])
+            sns.lineplot(data=ls_4, color=Colors[3], linewidth=1.5, label=Columnas[3] + ' ' + Percentage[3])
+            sns.lineplot(data=ls_5, color=Colors[4], linewidth=1.5, label=Columnas[4] + ' ' + Percentage[4])
+# for t, l in zip(Likert_graph.legend, Columnas):
+#     t.set_text(l)
+            plt.legend(title="SEGMENTACION DE LA ESCALA DE LIKERT")
+            plt.show()
+            st.pyplot(fig)
+        
+# Volver a mostrar la imagen si no se ha seleccionado ningún modelo
+        if st.session_state.show_image:
+            st.image("machine.png", caption="Descripción de la imagen", use_column_width=True)
         
         
+        
+            
    ######################################################################################################
     
 # Llamada a la función para mostrar el gráfico de importancia de preguntas
     if st.sidebar.checkbox('Grafico de barras'):
-        st.header("Determinación de Preguntas")
+        st.header("Influencia de Satisfacción de las Preguntas")
         mostrar_grafico_importancia_preguntas(modelo_final, X_train, y_train)
+        
+        
 
 if __name__=='__main__':
     main()
