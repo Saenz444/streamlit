@@ -164,9 +164,12 @@ plt.show()
 predicciones = modelo_final.predict_proba(X = X_test)
 print(predicciones[:5, :])
 
+nuevo_modelo = RandomForestClassifier(random_state=123)
+nuevo_modelo.fit(X_train, y_train)
+
 # Importancia por permutación
 importancia = permutation_importance(
-    estimator    = modelo_final,
+   estimator    = nuevo_modelo,
     X            = X_train,
     y            = y_train,
     n_repeats    = 5,
@@ -176,7 +179,7 @@ importancia = permutation_importance(
     )
 
 # Se almacenan los resultados (media y desviación) en un dataframe
-# df_importancia['feature'] = X_train.columns
+#df_importancia['feature'] = X_train.columns
 df_importancia = pd.DataFrame(
     { k: importancia[k] for k in ['importances_mean', 'importances_std'] }
     )
@@ -184,10 +187,9 @@ df_importancia['predictor'] = X_train.columns
 print(df_importancia.sort_values('importances_mean', ascending=False))
 
 
-
 # Graficamos los resultados
 # ************************************************************************************************
-color = ['r','r','r','y','g','g','g']
+color = ['y','y','g','g','g','g','g']
 fig, ax = plt.subplots(figsize=(5, 6))
 df_importancia = df_importancia.sort_values('importances_mean', ascending=True)
 ax.barh(

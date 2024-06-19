@@ -77,6 +77,7 @@ estudiantes_CEPRE.rename(columns=dfColumnas, inplace=True)
 Data_tesis = estudiantes_CEPRE[['P-3','P-2','P-7','P-4','P-1','P-6','P-5']]
 #Data_tesis
 
+    
 
 # In[5]:
 graph_Data = estudiantes_CEPRE[['P-1','P-2','P-3','P-4','P-5','P-6','P-7']].transpose()
@@ -108,9 +109,6 @@ Data_tesis = estudiantes_CEPRE[['P-3', 'P-2', 'P-7', 'P-4', 'P-1', 'P-6', 'P-5']
 
 Data_tesis['PROM'] = Data_tesis[['P-3', 'P-2', 'P-7', 'P-4', 'P-1', 'P-6', 'P-5']].apply(Calcular_Promedio, axis=1)
 
-
-
-
 ###########################################################################################################   
    # Ajuste del modelo y optimización de hiperparámetros 
 X_train, X_test, y_train, y_test = train_test_split(
@@ -141,7 +139,8 @@ grid.fit(X = X_train, y = y_train)
 #Calcular la accuracy
 modelo_final = grid.best_estimator_
 predicciones = modelo_final.predict(X = X_test) 
-    
+
+
 #Medir el rendimmiento del modelo
 mat_confusion = confusion_matrix(
         y_true    = y_test,
@@ -216,26 +215,31 @@ print('RMSE:', (np.sqrt(mean_squared_error(y_test_svm, prediccion_RL))))
     
  ###########################################################################################   
  # Función para mostrar el gráfico de importancia de características para RandomForest
-def mostrar_grafico_importancia_preguntas(modelo, X_train, y_train):
+nuevo_modelo = RandomForestClassifier(random_state=123)
+nuevo_modelo.fit(X_train, y_train)
+
+def mostrar_grafico_importancia_preguntas(nuevo_modelo, X_train, y_train):
+    # Importancia por permutación
     # Importancia por permutación
     importancia = permutation_importance(
-        estimator=modelo,
-        X=X_train,
-        y=y_train,
-        n_repeats=5,
-        scoring='neg_root_mean_squared_error',
-        n_jobs=multiprocessing.cpu_count() - 1,
-        random_state=123
-    ) 
-        # Almacenar los resultados (media y desviación) en un DataFrame
-    df_importancia = pd.DataFrame({
-        'importances_mean': importancia['importances_mean'],
-        'importances_std': importancia['importances_std'],
-        'predictor': X_train.columns
-    })
+        estimator    = nuevo_modelo,
+        X            = X_train,
+        y            = y_train,
+        n_repeats    = 5,
+        scoring      = 'neg_root_mean_squared_error',
+        n_jobs       = multiprocessing.cpu_count() - 1,
+        random_state = 123
+    )
+
+# Se almacenan los resultados (media y desviación) en un dataframe
+#df_importancia['feature'] = X_train.columns
+    df_importancia = pd.DataFrame(
+        { k: importancia[k] for k in ['importances_mean', 'importances_std'] }
+        )
+    df_importancia['predictor'] = X_train.columns
 
     # Graficar los resultados
-    color = ['r', 'r', 'r', 'y', 'g', 'g', 'g']
+    color = ['y', 'y', 'g', 'g', 'g', 'g', 'g']
     fig, ax = plt.subplots(figsize=(5, 6))
     df_importancia = df_importancia.sort_values('importances_mean', ascending=True)
     ax.barh(
@@ -262,8 +266,6 @@ def mostrar_grafico_importancia_preguntas(modelo, X_train, y_train):
     st.pyplot(fig)
 ######################################################################################
 
-
-######################################################################################################################
 #STREAMLIT - WEB
 def main():
 
@@ -512,15 +514,12 @@ def main():
         if st.session_state.show_image:
             st.image("machine.png", caption="Descripción de la imagen", use_column_width=True)
         
-        
-        
-            
    ######################################################################################################
     
 # Llamada a la función para mostrar el gráfico de importancia de preguntas
     if st.sidebar.checkbox('Grafico de barras'):
         st.header("Influencia de Satisfacción de las Preguntas")
-        mostrar_grafico_importancia_preguntas(modelo_final, X_train, y_train)
+        mostrar_grafico_importancia_preguntas(nuevo_modelo, X_train, y_train)
         
         
 
