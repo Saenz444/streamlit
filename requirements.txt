@@ -1,6 +1,6 @@
 altair
 anyio
-argon2-cffi
+argon2-cffi==21.1.0  # Compatible con Python 3.9
 argon2-cffi-bindings
 arrow
 asttokens
@@ -12,7 +12,7 @@ bleach
 blinker
 cachetools
 certifi
-cffi
+cffi==1.14.6  # Compatible con Python 3.9
 charset-normalizer
 click
 colorama
@@ -81,7 +81,7 @@ nest-asyncio
 nh3
 notebook
 notebook_shim
-numpy
+numpy==1.21.6  # Última versión compatible con Python 3.9
 oauthlib
 openpyxl
 overrides
@@ -109,7 +109,7 @@ PySocks
 python-dateutil
 python-json-logger
 pytz
-pywin32
+pywin32==300  # Compatible con Python 3.9
 pywin32-ctypes
 pywinpty
 PyYAML
@@ -127,14 +127,13 @@ rfc3986-validator
 rich
 rpds-py
 rsa
-sklearn
+scikit-learn  # Reemplazo de sklearn
 scipy
 seaborn
 Send2Trash
 setuptools
 SimpleWebSocketServer
 six
-sklearn
 smmap
 sniffio
 soupsieve
