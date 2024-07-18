@@ -81,7 +81,7 @@ nest-asyncio
 nh3
 notebook
 notebook_shim
-numpy==1.21.6  # Última versión compatible con Python 3.9
+numpy==1.21.1  # Última versión compatible con Python 3.9
 oauthlib
 openpyxl
 overrides
