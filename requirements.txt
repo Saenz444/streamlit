@@ -127,7 +127,7 @@ rfc3986-validator
 rich
 rpds-py
 rsa
-scikit-learn
+sklearn
 scipy
 seaborn
 Send2Trash
