@@ -109,8 +109,8 @@ PySocks
 python-dateutil
 python-json-logger
 pytz
-pywin32==300  # Compatible con Python 3.9
-pywin32-ctypes
+#pywin32==300  # Compatible con Python 3.9
+#pywin32-ctypes
 pywinpty
 PyYAML
 pyzmq
