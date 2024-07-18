@@ -17,7 +17,7 @@ from sklearn.preprocessing import MinMaxScaler
 import os
 
 # Ruta al archivo Excel (ajusta la ruta según sea necesario)
-file_path = os.path.join(os.getcwd(), 'Data.xlsx')
+file_path = os.path.join(os.getcwd(), 'Datavf.xlsx')
 
 # Imprime la ruta del archivo para verificar
 print(f"Looking for the file at: {file_path}")

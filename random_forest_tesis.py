@@ -38,7 +38,7 @@ import pickle
 # Leer el data
 
 # Ruta al archivo Excel (o la ruta correcta a tu conjunto de datos)
-archivo_excel = 'Data_Modificado.xlsx'
+archivo_excel = 'Datavf_Modificado.xlsx'
 
 # Leer el conjunto de datos con pandas
 Data = pd.read_excel(archivo_excel)

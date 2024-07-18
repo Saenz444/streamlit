@@ -32,7 +32,7 @@ def mostrar_grafico_importancia_preguntas(nuevo_modelo, X_train, y_train):
     df_importancia['predictor'] = X_train.columns
 
     fig, ax = plt.subplots(figsize=(5, 6))
-    color = ['r','r','y','y','g','g','g']
+    color = ['y','y','y','y','y','g','g']
     fig, ax = plt.subplots(figsize=(5, 6))
     df_importancia = df_importancia.sort_values('importances_mean', ascending=True)
     ax.barh(df_importancia['predictor'],
@@ -68,7 +68,7 @@ def main():
 
     st.sidebar.header('PARÁMETROS DE ENTRADA')
 
-    archivo1 = 'Data_Modificado.xlsx'
+    archivo1 = 'Datavf_Modificado.xlsx'
     Data1 = pd.read_excel(archivo1)
     
     estudiantes_CEPRE = Data1.drop(['Satisfaccion', 'PROM'], axis=1)
@@ -258,3 +258,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+    
+
