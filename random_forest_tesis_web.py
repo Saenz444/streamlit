@@ -32,7 +32,7 @@ def mostrar_grafico_importancia_preguntas(nuevo_modelo, X_train, y_train):
     df_importancia['predictor'] = X_train.columns
 
     fig, ax = plt.subplots(figsize=(5, 6))
-    color = ['y','y','y','y','y','g','g']
+    color = ['y','y','y','y','g','g','g']
     fig, ax = plt.subplots(figsize=(5, 6))
     df_importancia = df_importancia.sort_values('importances_mean', ascending=True)
     ax.barh(df_importancia['predictor'],
